@@ -1,0 +1,4 @@
+services/backend/.vscode
+services/backend/node_modules
+services/backend/storage
+services/backend/public/storage

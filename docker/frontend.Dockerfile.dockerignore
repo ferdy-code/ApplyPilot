@@ -1,0 +1,9 @@
+.git
+.vscode
+.nuxt
+.output
+.venv
+venv
+docker
+node_modules
+services
