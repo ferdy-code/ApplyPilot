@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "shadcn": {
+      "command": "bunx --bun",
+      "args": ["shadcn-vue@latest", "mcp"]
+    }
+  }
+}
