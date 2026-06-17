@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "intercom": {
+      "type": "stdio",
+      "command": "bun",
+      "args": [
+        "/mnt/c/Users/Lenovo/.claude/mcp-intercom/src/server.ts"
+      ],
+      "env": {
+        "MCP_INTERCOM_STORE": "/mnt/c/Users/Lenovo/.claude/mcp-intercom/store"
+      }
+    }
+  }
+}

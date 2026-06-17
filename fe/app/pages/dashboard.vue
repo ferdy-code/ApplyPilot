@@ -4,20 +4,22 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from '@/components/ui/badge'
 import type { ApplicationStatus } from '~/composables/useApplications'
 
-const { applications } = useApplications()
+const { applications, fetchApplications } = useApplications()
+
+onMounted(fetchApplications)
 
 const stats = computed(() => [
   {
-    label: 'Total Applied',
+    label: 'Total Tracked',
     value: applications.value.length,
     icon: PhStack,
     color: 'text-zinc-500',
   },
   {
-    label: 'In Review',
-    value: applications.value.filter((a) => a.status === 'reviewing').length,
+    label: 'Wishlist',
+    value: applications.value.filter((a) => a.status === 'wishlist').length,
     icon: PhMagnifyingGlass,
-    color: 'text-blue-500',
+    color: 'text-violet-500',
   },
   {
     label: 'Interviews',
@@ -27,18 +29,19 @@ const stats = computed(() => [
   },
   {
     label: 'Offers',
-    value: applications.value.filter((a) => a.status === 'offered').length,
+    value: applications.value.filter((a) => a.status === 'offer').length,
     icon: PhTrophy,
     color: 'text-green-500',
   },
 ])
 
 const statusLabel: Record<ApplicationStatus, string> = {
+  wishlist: 'Wishlist',
   applied: 'Applied',
-  reviewing: 'In Review',
   interview: 'Interview',
-  offered: 'Offered',
+  offer: 'Offer',
   rejected: 'Rejected',
+  archived: 'Archived',
 }
 
 const recentApplications = computed(() => applications.value.slice(0, 3))
@@ -90,7 +93,7 @@ const recentApplications = computed(() => applications.value.slice(0, 3))
           class="flex items-center justify-between py-2.5 px-2 -mx-2 rounded-md hover:bg-muted/50 transition-colors border-b last:border-0"
         >
           <div>
-            <p class="text-sm font-medium">{{ app.company }}</p>
+            <p class="text-sm font-medium">{{ app.companyName }}</p>
             <p class="text-xs text-muted-foreground">{{ app.position }}</p>
           </div>
           <Badge :variant="app.status">{{ statusLabel[app.status] }}</Badge>

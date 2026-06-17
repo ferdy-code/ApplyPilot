@@ -15,7 +15,9 @@ import type { ApplicationStatus } from '~/composables/useApplications'
 
 definePageMeta({ title: 'Applications' })
 
-const { applications } = useApplications()
+const { applications, pending, fetchApplications } = useApplications()
+
+onMounted(fetchApplications)
 
 type FilterStatus = ApplicationStatus | 'all'
 
@@ -36,20 +38,22 @@ const statusCounts = computed(() => {
 })
 
 const statusLabel: Record<ApplicationStatus, string> = {
+  wishlist: 'Wishlist',
   applied: 'Applied',
-  reviewing: 'In Review',
   interview: 'Interview',
-  offered: 'Offered',
+  offer: 'Offer',
   rejected: 'Rejected',
+  archived: 'Archived',
 }
 
 const filterTabs: { key: FilterStatus; label: string }[] = [
   { key: 'all', label: 'All' },
+  { key: 'wishlist', label: 'Wishlist' },
   { key: 'applied', label: 'Applied' },
-  { key: 'reviewing', label: 'In Review' },
   { key: 'interview', label: 'Interview' },
-  { key: 'offered', label: 'Offered' },
+  { key: 'offer', label: 'Offer' },
   { key: 'rejected', label: 'Rejected' },
+  { key: 'archived', label: 'Archived' },
 ]
 
 function formatDate(dateStr: string) {
@@ -106,8 +110,13 @@ function formatDate(dateStr: string) {
       </button>
     </div>
 
+    <!-- Loading -->
+    <div v-if="pending" class="py-12 text-center text-sm text-muted-foreground">
+      Loading applications…
+    </div>
+
     <!-- Table -->
-    <template v-if="filteredApplications.length > 0">
+    <template v-else-if="filteredApplications.length > 0">
       <div class="rounded-md border">
         <Table>
           <TableHeader>
@@ -115,9 +124,7 @@ function formatDate(dateStr: string) {
               <TableHead>Company</TableHead>
               <TableHead>Position</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Applied</TableHead>
-              <TableHead class="hidden md:table-cell">Location</TableHead>
-              <TableHead class="hidden lg:table-cell">Salary</TableHead>
+              <TableHead>Added</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -127,19 +134,13 @@ function formatDate(dateStr: string) {
               class="cursor-pointer"
               @click="navigateTo(`/applications/${app.id}`)"
             >
-              <TableCell class="font-medium">{{ app.company }}</TableCell>
+              <TableCell class="font-medium">{{ app.companyName }}</TableCell>
               <TableCell class="text-muted-foreground">{{ app.position }}</TableCell>
               <TableCell>
                 <Badge :variant="app.status">{{ statusLabel[app.status] }}</Badge>
               </TableCell>
               <TableCell class="text-muted-foreground tabular-nums">
-                {{ formatDate(app.appliedDate) }}
-              </TableCell>
-              <TableCell class="hidden text-muted-foreground md:table-cell">
-                {{ app.location ?? '—' }}
-              </TableCell>
-              <TableCell class="hidden text-muted-foreground tabular-nums lg:table-cell">
-                {{ app.salary ?? '—' }}
+                {{ formatDate(app.createdAt) }}
               </TableCell>
             </TableRow>
           </TableBody>

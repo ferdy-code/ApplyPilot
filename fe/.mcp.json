@@ -2,7 +2,17 @@
   "mcpServers": {
     "shadcn": {
       "command": "bunx --bun",
-      "args": ["shadcn-vue@latest", "mcp"]
+      "args": [
+        "shadcn-vue@latest",
+        "mcp"
+      ]
+    },
+    "intercom": {
+      "type": "stdio",
+      "command": "bun",
+      "args": [
+        "C:/Users/Lenovo/.claude/mcp-intercom/src/server.ts"
+      ]
     }
   }
 }

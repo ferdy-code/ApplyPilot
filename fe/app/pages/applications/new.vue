@@ -9,36 +9,60 @@ definePageMeta({ title: 'New Application' })
 const { addApplication } = useApplications()
 
 const statusLabel: Record<ApplicationStatus, string> = {
+  wishlist: 'Wishlist',
   applied: 'Applied',
-  reviewing: 'In Review',
   interview: 'Interview',
-  offered: 'Offered',
+  offer: 'Offer',
   rejected: 'Rejected',
+  archived: 'Archived',
 }
 
 const form = reactive({
-  company: '',
+  companyName: '',
+  companyLocation: '',
   position: '',
-  status: 'applied' as ApplicationStatus,
-  appliedDate: new Date().toISOString().slice(0, 10),
-  location: '',
-  salary: '',
+  status: 'wishlist' as ApplicationStatus,
+  source: '',
+  deadline: '',
+  salaryMin: '',
+  salaryMax: '',
+  salaryCurrency: 'USD',
   notes: '',
-  jobUrl: '',
 })
 
-const errors = reactive({ company: '', position: '' })
+const errors = reactive({ companyName: '', position: '' })
+const submitting = ref(false)
+const submitError = ref('')
 
 function validate(): boolean {
-  errors.company = form.company.trim() ? '' : 'Company name is required'
+  errors.companyName = form.companyName.trim() ? '' : 'Company name is required'
   errors.position = form.position.trim() ? '' : 'Position is required'
-  return !errors.company && !errors.position
+  return !errors.companyName && !errors.position
 }
 
 async function handleSubmit() {
   if (!validate()) return
-  addApplication({ ...form })
-  await navigateTo('/applications')
+  submitting.value = true
+  submitError.value = ''
+  try {
+    await addApplication({
+      companyName: form.companyName.trim(),
+      companyLocation: form.companyLocation.trim() || undefined,
+      position: form.position.trim(),
+      status: form.status,
+      source: form.source.trim() || undefined,
+      deadline: form.deadline || undefined,
+      salaryMin: form.salaryMin.trim() || undefined,
+      salaryMax: form.salaryMax.trim() || undefined,
+      salaryCurrency: form.salaryCurrency.trim() || undefined,
+      notes: form.notes.trim() || undefined,
+    })
+    await navigateTo('/applications')
+  } catch {
+    submitError.value = 'Failed to save application. Please try again.'
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 
@@ -63,13 +87,18 @@ async function handleSubmit() {
         </label>
         <Input
           id="company"
-          v-model="form.company"
+          v-model="form.companyName"
           placeholder="Stripe"
-          :aria-invalid="!!errors.company"
+          :aria-invalid="!!errors.companyName"
         />
-        <p v-if="errors.company" class="text-xs text-destructive" role="alert">
-          {{ errors.company }}
+        <p v-if="errors.companyName" class="text-xs text-destructive" role="alert">
+          {{ errors.companyName }}
         </p>
+      </div>
+
+      <div class="space-y-1.5">
+        <label class="text-sm font-medium" for="company-location">Company Location</label>
+        <Input id="company-location" v-model="form.companyLocation" placeholder="San Francisco, CA" />
       </div>
 
       <div class="space-y-1.5">
@@ -108,23 +137,22 @@ async function handleSubmit() {
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="applied-date">Applied Date</label>
-        <Input id="applied-date" v-model="form.appliedDate" type="date" />
+        <label class="text-sm font-medium" for="source">Source</label>
+        <Input id="source" v-model="form.source" placeholder="LinkedIn, referral, company website…" />
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="location">Location</label>
-        <Input id="location" v-model="form.location" placeholder="Remote" />
+        <label class="text-sm font-medium" for="deadline">Deadline</label>
+        <Input id="deadline" v-model="form.deadline" type="date" />
       </div>
 
       <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="salary">Salary Range</label>
-        <Input id="salary" v-model="form.salary" placeholder="$120k – $150k" />
-      </div>
-
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="job-url">Job URL</label>
-        <Input id="job-url" v-model="form.jobUrl" type="url" placeholder="https://..." />
+        <p class="text-sm font-medium">Salary Range</p>
+        <div class="flex gap-2">
+          <Input v-model="form.salaryMin" placeholder="Min" class="flex-1" />
+          <Input v-model="form.salaryMax" placeholder="Max" class="flex-1" />
+          <Input v-model="form.salaryCurrency" placeholder="USD" class="w-20" maxlength="3" />
+        </div>
       </div>
 
       <div class="space-y-1.5">
@@ -138,11 +166,15 @@ async function handleSubmit() {
         />
       </div>
 
+      <p v-if="submitError" class="text-xs text-destructive" role="alert">{{ submitError }}</p>
+
       <div class="flex justify-end gap-2 pt-2">
         <Button type="button" variant="outline" as-child>
           <NuxtLink to="/applications">Cancel</NuxtLink>
         </Button>
-        <Button type="submit">Add Application</Button>
+        <Button type="submit" :disabled="submitting">
+          {{ submitting ? 'Saving…' : 'Add Application' }}
+        </Button>
       </div>
     </form>
   </div>

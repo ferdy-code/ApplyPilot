@@ -5,28 +5,34 @@ import {
   PhTrash,
   PhX,
   PhCheck,
-  PhArrowSquareOut,
 } from '@phosphor-icons/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import type { ApplicationStatus } from '~/composables/useApplications'
+import type { ApplicationStatus, UpdateApplicationInput } from '~/composables/useApplications'
 
 definePageMeta({ title: 'Application' })
 
 const route = useRoute()
-const { getApplication, updateApplication, deleteApplication } = useApplications()
+const { applications, fetchApplications, updateApplication, deleteApplication } = useApplications()
 
-const application = computed(() => getApplication(route.params.id as string))
+onMounted(async () => {
+  if (applications.value.length === 0) await fetchApplications()
+})
+
+const application = computed(() =>
+  applications.value.find((a) => a.id === Number(route.params.id)),
+)
 
 const statusLabel: Record<ApplicationStatus, string> = {
+  wishlist: 'Wishlist',
   applied: 'Applied',
-  reviewing: 'In Review',
   interview: 'Interview',
-  offered: 'Offered',
+  offer: 'Offer',
   rejected: 'Rejected',
+  archived: 'Archived',
 }
 
 function formatDate(dateStr: string) {
@@ -37,49 +43,78 @@ function formatDate(dateStr: string) {
   })
 }
 
+function formatSalary(min: string | null, max: string | null, currency: string | null): string {
+  if (!min && !max) return '—'
+  const cur = currency ?? ''
+  if (min && max) return `${min} – ${max} ${cur}`.trim()
+  return `${min ?? max} ${cur}`.trim()
+}
+
 // ── Edit mode ────────────────────────────────────────────────
 const isEditing = ref(false)
+const saving = ref(false)
+const saveError = ref('')
 
-const editForm = reactive({
-  company: '',
+const editForm = reactive<UpdateApplicationInput & { status: ApplicationStatus }>({
   position: '',
-  status: 'applied' as ApplicationStatus,
-  appliedDate: '',
-  location: '',
-  salary: '',
-  notes: '',
-  jobUrl: '',
+  status: 'wishlist',
+  source: null,
+  deadline: null,
+  salaryMin: null,
+  salaryMax: null,
+  salaryCurrency: null,
+  notes: null,
 })
 
 function startEdit() {
   if (!application.value) return
   Object.assign(editForm, {
-    company: application.value.company,
     position: application.value.position,
     status: application.value.status,
-    appliedDate: application.value.appliedDate,
-    location: application.value.location ?? '',
-    salary: application.value.salary ?? '',
+    source: application.value.source ?? '',
+    deadline: application.value.deadline ?? '',
+    salaryMin: application.value.salaryMin ?? '',
+    salaryMax: application.value.salaryMax ?? '',
+    salaryCurrency: application.value.salaryCurrency ?? 'USD',
     notes: application.value.notes ?? '',
-    jobUrl: application.value.jobUrl ?? '',
   })
   isEditing.value = true
 }
 
 function cancelEdit() {
   isEditing.value = false
+  saveError.value = ''
 }
 
-function saveEdit() {
-  updateApplication(route.params.id as string, { ...editForm })
-  isEditing.value = false
+async function saveEdit() {
+  if (!application.value) return
+  saving.value = true
+  saveError.value = ''
+  try {
+    await updateApplication(application.value.id, {
+      position: editForm.position || undefined,
+      status: editForm.status,
+      source: (editForm.source as string).trim() || null,
+      deadline: (editForm.deadline as string) || null,
+      salaryMin: (editForm.salaryMin as string).trim() || null,
+      salaryMax: (editForm.salaryMax as string).trim() || null,
+      salaryCurrency: (editForm.salaryCurrency as string).trim() || null,
+      notes: (editForm.notes as string).trim() || null,
+    })
+    isEditing.value = false
+  } catch {
+    saveError.value = 'Failed to save. Please try again.'
+  } finally {
+    saving.value = false
+  }
 }
 
 // ── Delete confirm ────────────────────────────────────────────
 const isConfirmingDelete = ref(false)
 
 async function confirmDelete() {
-  deleteApplication(route.params.id as string)
+  if (!application.value) return
+  await deleteApplication(application.value.id)
   await navigateTo('/applications')
 }
 </script>
@@ -106,26 +141,21 @@ async function confirmDelete() {
       <div class="flex items-center justify-between gap-4">
         <div>
           <h1 class="text-xl font-semibold">Edit Application</h1>
-          <p class="text-sm text-muted-foreground">{{ application.company }}</p>
+          <p class="text-sm text-muted-foreground">{{ application.companyName }}</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <Button variant="outline" size="sm" @click="cancelEdit">
             <PhX :size="14" />
             Cancel
           </Button>
-          <Button size="sm" @click="saveEdit">
+          <Button size="sm" :disabled="saving" @click="saveEdit">
             <PhCheck :size="14" />
-            Save
+            {{ saving ? 'Saving…' : 'Save' }}
           </Button>
         </div>
       </div>
 
       <form class="space-y-5" @submit.prevent="saveEdit">
-        <div class="space-y-1.5">
-          <label class="text-sm font-medium" for="edit-company">Company</label>
-          <Input id="edit-company" v-model="editForm.company" />
-        </div>
-
         <div class="space-y-1.5">
           <label class="text-sm font-medium" for="edit-position">Position</label>
           <Input id="edit-position" v-model="editForm.position" />
@@ -152,23 +182,22 @@ async function confirmDelete() {
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-sm font-medium" for="edit-date">Applied Date</label>
-          <Input id="edit-date" v-model="editForm.appliedDate" type="date" />
+          <label class="text-sm font-medium" for="edit-source">Source</label>
+          <Input id="edit-source" v-model="editForm.source" placeholder="LinkedIn, referral…" />
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-sm font-medium" for="edit-location">Location</label>
-          <Input id="edit-location" v-model="editForm.location" placeholder="Remote" />
+          <label class="text-sm font-medium" for="edit-deadline">Deadline</label>
+          <Input id="edit-deadline" v-model="editForm.deadline" type="date" />
         </div>
 
         <div class="space-y-1.5">
-          <label class="text-sm font-medium" for="edit-salary">Salary Range</label>
-          <Input id="edit-salary" v-model="editForm.salary" placeholder="$120k – $150k" />
-        </div>
-
-        <div class="space-y-1.5">
-          <label class="text-sm font-medium" for="edit-url">Job URL</label>
-          <Input id="edit-url" v-model="editForm.jobUrl" type="url" placeholder="https://..." />
+          <p class="text-sm font-medium">Salary Range</p>
+          <div class="flex gap-2">
+            <Input v-model="editForm.salaryMin" placeholder="Min" class="flex-1" />
+            <Input v-model="editForm.salaryMax" placeholder="Max" class="flex-1" />
+            <Input v-model="editForm.salaryCurrency" placeholder="USD" class="w-20" maxlength="3" />
+          </div>
         </div>
 
         <div class="space-y-1.5">
@@ -180,6 +209,8 @@ async function confirmDelete() {
             class="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           />
         </div>
+
+        <p v-if="saveError" class="text-xs text-destructive" role="alert">{{ saveError }}</p>
       </form>
     </template>
 
@@ -188,7 +219,7 @@ async function confirmDelete() {
       <div class="flex items-start justify-between gap-4">
         <div class="min-w-0 space-y-1">
           <div class="flex flex-wrap items-center gap-3">
-            <h1 class="text-2xl font-semibold">{{ application.company }}</h1>
+            <h1 class="text-2xl font-semibold">{{ application.companyName }}</h1>
             <Badge :variant="application.status">{{ statusLabel[application.status] }}</Badge>
           </div>
           <p class="text-muted-foreground">{{ application.position }}</p>
@@ -199,7 +230,6 @@ async function confirmDelete() {
             <PhPencilSimple :size="14" />
             Edit
           </Button>
-          <!-- Delete: two-step inline confirm -->
           <template v-if="isConfirmingDelete">
             <span class="text-sm text-muted-foreground">Delete this?</span>
             <Button variant="destructive" size="sm" @click="confirmDelete">
@@ -226,39 +256,32 @@ async function confirmDelete() {
         <CardContent class="space-y-4 pt-6">
           <dl class="space-y-4 text-sm">
             <div class="flex gap-3">
-              <dt class="w-28 shrink-0 text-muted-foreground">Applied</dt>
-              <dd>{{ formatDate(application.appliedDate) }}</dd>
+              <dt class="w-28 shrink-0 text-muted-foreground">Added</dt>
+              <dd>{{ formatDate(application.createdAt) }}</dd>
             </div>
 
-            <template v-if="application.location">
+            <template v-if="application.source">
               <Separator />
               <div class="flex gap-3">
-                <dt class="w-28 shrink-0 text-muted-foreground">Location</dt>
-                <dd>{{ application.location }}</dd>
+                <dt class="w-28 shrink-0 text-muted-foreground">Source</dt>
+                <dd>{{ application.source }}</dd>
               </div>
             </template>
 
-            <template v-if="application.salary">
+            <template v-if="application.deadline">
+              <Separator />
+              <div class="flex gap-3">
+                <dt class="w-28 shrink-0 text-muted-foreground">Deadline</dt>
+                <dd>{{ formatDate(application.deadline) }}</dd>
+              </div>
+            </template>
+
+            <template v-if="application.salaryMin || application.salaryMax">
               <Separator />
               <div class="flex gap-3">
                 <dt class="w-28 shrink-0 text-muted-foreground">Salary</dt>
-                <dd class="tabular-nums">{{ application.salary }}</dd>
-              </div>
-            </template>
-
-            <template v-if="application.jobUrl">
-              <Separator />
-              <div class="flex gap-3">
-                <dt class="w-28 shrink-0 text-muted-foreground">Job posting</dt>
-                <dd>
-                  <a
-                    :href="application.jobUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="inline-flex items-center gap-1 text-primary hover:underline"
-                  >
-                    View <PhArrowSquareOut :size="13" />
-                  </a>
+                <dd class="tabular-nums">
+                  {{ formatSalary(application.salaryMin, application.salaryMax, application.salaryCurrency) }}
                 </dd>
               </div>
             </template>

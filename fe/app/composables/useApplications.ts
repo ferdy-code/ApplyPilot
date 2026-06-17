@@ -1,94 +1,115 @@
-export type ApplicationStatus = 'applied' | 'reviewing' | 'interview' | 'offered' | 'rejected'
+export type ApplicationStatus = 'wishlist' | 'applied' | 'interview' | 'offer' | 'rejected' | 'archived'
 
 export interface Application {
-  id: string
-  company: string
+  id: number
+  userId: number
+  companyId: number
+  companyName: string
   position: string
   status: ApplicationStatus
-  appliedDate: string
-  location?: string
-  salary?: string
-  notes?: string
-  jobUrl?: string
+  source: string | null
+  deadline: string | null
+  salaryMin: string | null
+  salaryMax: string | null
+  salaryCurrency: string | null
+  jobDescription: string | null
+  notes: string | null
+  createdAt: string
+  updatedAt: string
 }
 
-const INITIAL_APPLICATIONS: Application[] = [
-  {
-    id: '1',
-    company: 'Stripe',
-    position: 'Senior Frontend Engineer',
-    status: 'interview',
-    appliedDate: '2026-05-20',
-    location: 'San Francisco, CA (Remote)',
-    salary: '$180k – $220k',
-    notes: 'Technical screen scheduled for next week. Focus on system design and React.',
-    jobUrl: 'https://stripe.com/jobs',
-  },
-  {
-    id: '2',
-    company: 'Vercel',
-    position: 'Staff Engineer',
-    status: 'reviewing',
-    appliedDate: '2026-05-28',
-    location: 'Remote',
-    salary: '$200k – $250k',
-    notes: 'Applied via referral from former colleague. Awaiting recruiter response.',
-    jobUrl: 'https://vercel.com/careers',
-  },
-  {
-    id: '3',
-    company: 'Linear',
-    position: 'Product Engineer',
-    status: 'applied',
-    appliedDate: '2026-06-02',
-    location: 'Remote',
-    salary: '$160k – $190k',
-    notes: 'Excited about their design-forward engineering culture.',
-  },
-  {
-    id: '4',
-    company: 'Notion',
-    position: 'Frontend Engineer',
-    status: 'rejected',
-    appliedDate: '2026-04-15',
-    location: 'New York, NY',
-    salary: '$150k – $180k',
-    notes: 'Received rejection email after final round. Good interview experience overall.',
-  },
-  {
-    id: '5',
-    company: 'GitHub',
-    position: 'Senior Software Engineer',
-    status: 'offered',
-    appliedDate: '2026-04-01',
-    location: 'Remote',
-    salary: '$190k – $230k',
-    notes: 'Offer received! Deadline to respond: June 20, 2026.',
-    jobUrl: 'https://github.com/about/careers',
-  },
-]
+export interface CreateApplicationInput {
+  companyName: string
+  companyLocation?: string
+  position: string
+  status?: ApplicationStatus
+  source?: string
+  deadline?: string
+  salaryMin?: string
+  salaryMax?: string
+  salaryCurrency?: string
+  notes?: string
+}
+
+export type UpdateApplicationInput = Partial<Pick<
+  Application,
+  'position' | 'status' | 'source' | 'deadline' | 'salaryMin' | 'salaryMax' | 'salaryCurrency' | 'jobDescription' | 'notes'
+>>
+
+const HARDCODED_USER_ID = 1
 
 export function useApplications() {
-  const applications = useState<Application[]>('applications', () => INITIAL_APPLICATIONS)
+  const { public: { apiBase } } = useRuntimeConfig()
 
-  function getApplication(id: string): Application | undefined {
-    return applications.value.find((app) => app.id === id)
-  }
+  const applications = useState<Application[]>('applications', () => [])
+  const pending = useState<boolean>('applications:pending', () => false)
+  const error = useState<string | null>('applications:error', () => null)
 
-  function addApplication(app: Omit<Application, 'id'>): void {
-    applications.value.unshift({ ...app, id: String(Date.now()) })
-  }
-
-  function updateApplication(id: string, updates: Partial<Omit<Application, 'id'>>): void {
-    const index = applications.value.findIndex((a) => a.id === id)
-    if (index !== -1) {
-      applications.value[index] = { ...applications.value[index], ...updates }
+  async function fetchApplications(): Promise<void> {
+    pending.value = true
+    error.value = null
+    try {
+      applications.value = await $fetch<Application[]>(`${apiBase}/applications`)
+    } catch (e) {
+      error.value = 'Failed to load applications'
+      console.error(e)
+    } finally {
+      pending.value = false
     }
   }
 
-  function deleteApplication(id: string): void {
+  function getApplication(id: number): Application | undefined {
+    return applications.value.find((app) => app.id === id)
+  }
+
+  async function addApplication(input: CreateApplicationInput): Promise<void> {
+    const company = await $fetch<{ id: number }>(`${apiBase}/companies`, {
+      method: 'POST',
+      body: {
+        name: input.companyName,
+        location: input.companyLocation ?? null,
+      },
+    })
+    const created = await $fetch<Application>(`${apiBase}/applications`, {
+      method: 'POST',
+      body: {
+        userId: HARDCODED_USER_ID,
+        companyId: company.id,
+        position: input.position,
+        status: input.status,
+        source: input.source ?? null,
+        deadline: input.deadline ?? null,
+        salaryMin: input.salaryMin ?? null,
+        salaryMax: input.salaryMax ?? null,
+        salaryCurrency: input.salaryCurrency ?? null,
+        notes: input.notes ?? null,
+      },
+    })
+    applications.value.unshift({ ...created, companyName: input.companyName })
+  }
+
+  async function updateApplication(id: number, updates: UpdateApplicationInput): Promise<void> {
+    const updated = await $fetch<Application>(`${apiBase}/applications/${id}`, {
+      method: 'PATCH',
+      body: updates,
+    })
+    const index = applications.value.findIndex((a) => a.id === id)
+    if (index !== -1) applications.value[index] = updated
+  }
+
+  async function deleteApplication(id: number): Promise<void> {
+    await $fetch(`${apiBase}/applications/${id}`, { method: 'DELETE' })
     applications.value = applications.value.filter((a) => a.id !== id)
   }
 
-  return { applications, getApplication, addApplication, updateApplication, deleteApplication }
+  return {
+    applications,
+    pending,
+    error,
+    fetchApplications,
+    getApplication,
+    addApplication,
+    updateApplication,
+    deleteApplication,
+  }
 }
