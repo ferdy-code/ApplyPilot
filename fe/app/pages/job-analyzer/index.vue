@@ -3,12 +3,11 @@ import { PhPlus, PhSparkle, PhArrowRight } from '@phosphor-icons/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import EmptyState from '@/components/common/EmptyState.vue'
-import ErrorState from '@/components/common/ErrorState.vue'
 import type { JobAnalysis } from '~/composables/useJobAnalyses'
 
 definePageMeta({ title: 'Job Analyzer', middleware: 'auth' })
 
-const { analyses, pending, error, fetchAnalyses } = useJobAnalyses()
+const { analyses, pending, fetchAnalyses } = useJobAnalyses()
 
 onMounted(fetchAnalyses)
 
@@ -65,8 +64,6 @@ function titleFor(a: JobAnalysis) {
     <div v-if="pending" class="py-12 text-center text-sm text-muted-foreground">
       Loading analyses…
     </div>
-
-    <ErrorState v-else-if="error" :message="error" :on-retry="fetchAnalyses" />
 
     <div v-else-if="analyses.length > 0" class="grid gap-3 sm:grid-cols-2">
       <button

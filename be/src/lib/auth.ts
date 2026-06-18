@@ -6,30 +6,36 @@ import { db } from "../db";
 import { account, session, user, verification } from "../db/schema";
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL!,
+  baseURL: process.env.BETTER_AUTH_URL,
   // Frontend origin permitted to use cookie-based sessions against this API.
   trustedOrigins: ["http://localhost:3000"],
   database: drizzleAdapter(db, {
     provider: "pg",
     schema: { user, session, account, verification },
   }),
-  account: {
-    accountLinking: {
-      enabled: true, // Enable account linking
-      trustedProviders: ["google", "github"], // Add trusted providers
-    },
-  },
   emailAndPassword: {
     enabled: true,
   },
+  // Social providers are registered only when their credentials are present, so
+  // email/password works locally without OAuth app setup. Spread keeps the keys
+  // typed against Better Auth's `socialProviders` option.
   socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-    },
-  },
-  verification: {
-    storeInDatabase: true, // Fallback if Redis key evicted
+    ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+      ? {
+          github: {
+            clientId: process.env.GITHUB_CLIENT_ID,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          },
+        }
+      : {}),
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+      ? {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          },
+        }
+      : {}),
   },
 });
 

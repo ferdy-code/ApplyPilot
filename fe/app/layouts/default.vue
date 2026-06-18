@@ -22,10 +22,9 @@ const route = useRoute()
 const { user, signOut } = useAuth()
 
 const initials = computed(() => {
-  const name = user.value?.name?.trim()
-  if (!name) return '?'
-  return name
-    .split(/\s+/)
+  if (!user.value) return '?'
+  return user.value.name
+    .split(' ')
     .map((n) => n[0])
     .join('')
     .toUpperCase()
@@ -118,8 +117,8 @@ const pageTitle = computed(() => (route.meta.title as string) || PAGE_TITLES[rou
       </SidebarFooter>
     </Sidebar>
 
-    <SidebarInset class="overflow-x-hidden">
-      <header class="flex h-12 shrink-0 items-center border-b bg-background/80 backdrop-blur-sm px-4 gap-2 sticky top-0 z-10">
+    <SidebarInset>
+      <header class="flex h-12 shrink-0 items-center border-b px-4 gap-2">
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="h-4" />
         <span v-if="pageTitle" class="text-sm font-semibold tracking-tight">{{ pageTitle }}</span>

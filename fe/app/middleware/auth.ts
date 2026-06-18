@@ -1,11 +1,11 @@
-export default defineNuxtRouteMiddleware((to) => {
-  // Skip on server — the session is cross-origin (:8000) and only loaded
-  // client-side by plugins/auth.client.ts.
+import { authClient } from '~/lib/auth'
+
+export default defineNuxtRouteMiddleware(async (to) => {
+  // Skip on server — session cookie is cross-origin (:8000), not readable during SSR.
   if (import.meta.server) return
 
-  // Read the shared, already-cached session — no get-session call per navigation.
-  const { user } = useAuth()
-  const isAuthenticated = !!user.value
+  const { data } = await authClient.getSession()
+  const isAuthenticated = !!data?.user
 
   const guarded = ['/dashboard', '/applications']
   const isGuarded = guarded.some((p) => to.path === p || to.path.startsWith(p + '/'))

@@ -4,13 +4,12 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import ErrorState from '@/components/common/ErrorState.vue'
 import type { JobAnalysis } from '~/composables/useJobAnalyses'
 
 definePageMeta({ title: 'Analysis', middleware: 'auth' })
 
 const route = useRoute()
-const { analyses, pending, error, fetchAnalyses, deleteAnalysis } = useJobAnalyses()
+const { analyses, pending, fetchAnalyses, deleteAnalysis } = useJobAnalyses()
 
 onMounted(async () => {
   if (analyses.value.length === 0) await fetchAnalyses()
@@ -84,9 +83,6 @@ async function confirmDelete() {
     <div v-if="pending && !analysis" class="py-16 text-center text-sm text-muted-foreground">
       Loading analysis…
     </div>
-
-    <!-- Error -->
-    <ErrorState v-else-if="error" :message="error" :on-retry="fetchAnalyses" />
 
     <!-- Not found -->
     <div v-else-if="!analysis" class="py-16 text-center">

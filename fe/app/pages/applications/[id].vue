@@ -10,14 +10,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
-import ErrorState from '@/components/common/ErrorState.vue'
+import { Separator } from '@/components/ui/separator'
 import type { ApplicationStatus, UpdateApplicationInput } from '~/composables/useApplications'
 
 definePageMeta({ title: 'Application', middleware: 'auth' })
 
 const route = useRoute()
-const { applications, pending, error, fetchApplications, updateApplication, deleteApplication } = useApplications()
+const { applications, fetchApplications, updateApplication, deleteApplication } = useApplications()
 
 onMounted(async () => {
   if (applications.value.length === 0) await fetchApplications()
@@ -29,18 +28,14 @@ const application = computed(() =>
 
 const isLoading = computed(() => pending.value && !application.value)
 
-const statusOptions: { key: ApplicationStatus; label: string }[] = [
-  { key: 'wishlist', label: 'Wishlist' },
-  { key: 'applied', label: 'Applied' },
-  { key: 'interview', label: 'Interview' },
-  { key: 'offer', label: 'Offer' },
-  { key: 'rejected', label: 'Rejected' },
-  { key: 'archived', label: 'Archived' },
-]
-
-const statusLabel: Record<ApplicationStatus, string> = Object.fromEntries(
-  statusOptions.map(({ key, label }) => [key, label]),
-) as Record<ApplicationStatus, string>
+const statusLabel: Record<ApplicationStatus, string> = {
+  wishlist: 'Wishlist',
+  applied: 'Applied',
+  interview: 'Interview',
+  offer: 'Offer',
+  rejected: 'Rejected',
+  archived: 'Archived',
+}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -135,18 +130,8 @@ async function confirmDelete() {
       </NuxtLink>
     </Button>
 
-    <!-- Loading -->
-    <div v-if="isLoading" class="space-y-4">
-      <Skeleton class="h-8 w-48" />
-      <Skeleton class="h-5 w-32" />
-      <Skeleton class="h-52 w-full rounded-xl" />
-    </div>
-
-    <!-- Error -->
-    <ErrorState v-else-if="error" :message="error" :on-retry="fetchApplications" />
-
     <!-- Not found -->
-    <div v-else-if="!application" class="py-16 text-center">
+    <div v-if="!application" class="py-16 text-center">
       <p class="mb-4 text-muted-foreground">Application not found.</p>
       <Button variant="outline" as-child>
         <NuxtLink to="/applications">Back to Applications</NuxtLink>
@@ -184,18 +169,12 @@ async function confirmDelete() {
           <div class="space-y-1.5">
             <p class="text-sm font-medium">Status</p>
             <div class="flex flex-wrap gap-2">
-              <button
-                v-for="opt in statusOptions"
-                :key="opt.key"
-                type="button"
-                :class="[
-                  'rounded-full border px-3 py-1 text-sm font-medium transition-all',
-                  editForm.status === opt.key
-                    ? 'border-transparent bg-foreground text-background'
-                    : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
-                ]"
-                @click="editForm.status = opt.key"
-              >
+              <button v-for="opt in statusOptions" :key="opt.key" type="button" :class="[
+                'rounded-full border px-3 py-1 text-sm font-medium transition-all',
+                editForm.status === opt.key
+                  ? 'border-transparent bg-foreground text-background'
+                  : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+              ]" @click="editForm.status = opt.key">
                 {{ opt.label }}
               </button>
             </div>
@@ -221,19 +200,16 @@ async function confirmDelete() {
             <div class="flex gap-2">
               <Input v-model="editForm.salaryMin" placeholder="Min" class="flex-1" />
               <Input v-model="editForm.salaryMax" placeholder="Max" class="flex-1" />
-              <Input v-model="editForm.salaryCurrency" placeholder="USD" class="w-20 font-mono uppercase" maxlength="3" />
+              <Input v-model="editForm.salaryCurrency" placeholder="USD" class="w-20 font-mono uppercase"
+                maxlength="3" />
             </div>
           </div>
         </div>
 
         <div class="space-y-4">
           <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-2">Notes</p>
-          <textarea
-            id="edit-notes"
-            v-model="editForm.notes"
-            rows="4"
-            class="w-full resize-none rounded-lg border border-input bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          />
+          <textarea id="edit-notes" v-model="editForm.notes" rows="4"
+            class="w-full resize-none rounded-lg border border-input bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring" />
         </div>
 
         <p v-if="saveError" class="text-xs text-destructive" role="alert">{{ saveError }}</p>
@@ -266,13 +242,8 @@ async function confirmDelete() {
               <PhX :size="14" />
             </Button>
           </template>
-          <Button
-            v-else
-            variant="ghost"
-            size="icon-sm"
-            class="text-muted-foreground hover:text-destructive"
-            @click="isConfirmingDelete = true"
-          >
+          <Button v-else variant="ghost" size="icon-sm" class="text-muted-foreground hover:text-destructive"
+            @click="isConfirmingDelete = true">
             <PhTrash :size="14" />
           </Button>
         </div>
