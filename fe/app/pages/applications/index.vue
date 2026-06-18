@@ -67,17 +67,18 @@ function formatDate(dateStr: string) {
 </script>
 
 <template>
-  <div class="p-6 space-y-6">
-    <div class="flex items-start justify-between">
+  <div class="p-6 space-y-5">
+    <div class="flex items-start justify-between gap-4">
       <div>
-        <h1 class="text-xl font-semibold">Applications</h1>
-        <p class="text-sm text-muted-foreground">
-          {{ applications.length }} application{{ applications.length !== 1 ? 's' : '' }} tracked
+        <h1 class="text-xl font-semibold tracking-tight">Applications</h1>
+        <p class="text-sm text-muted-foreground mt-0.5">
+          <span class="font-mono tabular-nums">{{ applications.length }}</span>
+          application{{ applications.length !== 1 ? 's' : '' }} tracked
         </p>
       </div>
       <Button size="sm" as-child>
         <NuxtLink to="/applications/new">
-          <PhPlus :size="16" />
+          <PhPlus :size="15" />
           Add Application
         </NuxtLink>
       </Button>
@@ -90,9 +91,9 @@ function formatDate(dateStr: string) {
         :key="tab.key"
         type="button"
         :class="[
-          'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+          'inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition-all',
           activeFilter === tab.key
-            ? 'bg-primary text-primary-foreground'
+            ? 'bg-foreground text-background shadow-sm'
             : 'text-muted-foreground hover:bg-muted hover:text-foreground',
         ]"
         @click="activeFilter = tab.key"
@@ -100,9 +101,9 @@ function formatDate(dateStr: string) {
         {{ tab.label }}
         <span
           :class="[
-            'rounded-full px-1.5 py-0.5 text-xs font-medium tabular-nums',
+            'rounded-full px-1.5 py-0.5 text-xs font-mono tabular-nums',
             activeFilter === tab.key
-              ? 'bg-white/20 text-primary-foreground'
+              ? 'bg-background/15 text-background'
               : 'bg-muted text-muted-foreground',
           ]"
         >
@@ -121,14 +122,14 @@ function formatDate(dateStr: string) {
 
     <!-- Table -->
     <template v-else-if="filteredApplications.length > 0">
-      <div class="rounded-md border">
+      <div class="rounded-xl border overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Company</TableHead>
-              <TableHead>Position</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Added</TableHead>
+            <TableRow class="bg-muted/40 hover:bg-muted/40">
+              <TableHead class="font-semibold">Company</TableHead>
+              <TableHead class="font-semibold">Position</TableHead>
+              <TableHead class="font-semibold">Status</TableHead>
+              <TableHead class="font-semibold">Added</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -138,12 +139,12 @@ function formatDate(dateStr: string) {
               class="cursor-pointer"
               @click="navigateTo(`/applications/${app.id}`)"
             >
-              <TableCell class="font-medium">{{ app.companyName }}</TableCell>
+              <TableCell class="font-semibold">{{ app.companyName }}</TableCell>
               <TableCell class="text-muted-foreground">{{ app.position }}</TableCell>
               <TableCell>
                 <Badge :variant="app.status">{{ statusLabel[app.status] }}</Badge>
               </TableCell>
-              <TableCell class="text-muted-foreground tabular-nums">
+              <TableCell class="text-muted-foreground font-mono tabular-nums text-xs">
                 {{ formatDate(app.createdAt) }}
               </TableCell>
             </TableRow>
@@ -164,7 +165,7 @@ function formatDate(dateStr: string) {
       >
         <Button v-if="activeFilter === 'all'" size="sm" as-child>
           <NuxtLink to="/applications/new">
-            <PhPlus :size="16" />
+            <PhPlus :size="15" />
             Add your first application
           </NuxtLink>
         </Button>

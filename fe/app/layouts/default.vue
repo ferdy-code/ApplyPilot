@@ -119,10 +119,10 @@ const pageTitle = computed(() => (route.meta.title as string) || PAGE_TITLES[rou
     </Sidebar>
 
     <SidebarInset class="overflow-x-hidden">
-      <header class="flex h-12 shrink-0 items-center border-b px-4 gap-2">
+      <header class="flex h-12 shrink-0 items-center border-b bg-background/80 backdrop-blur-sm px-4 gap-2 sticky top-0 z-10">
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="h-4" />
-        <span v-if="pageTitle" class="text-sm font-medium">{{ pageTitle }}</span>
+        <span v-if="pageTitle" class="text-sm font-semibold tracking-tight">{{ pageTitle }}</span>
       </header>
       <div class="flex-1 overflow-y-auto">
         <slot />

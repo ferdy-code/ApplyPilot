@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhArrowLeft } from '@phosphor-icons/vue'
+import { PhArrowLeft, PhSparkle } from '@phosphor-icons/vue'
 import { Button } from '@/components/ui/button'
 
 definePageMeta({ title: 'New Analysis', middleware: 'auth' })
@@ -32,7 +32,6 @@ async function handleSubmit() {
     })
     await navigateTo(`/job-analyzer/${created.id}`)
   } catch (e) {
-    // $fetch surfaces the server body on e.data (HTTPException message/cause).
     const msg = (e as { data?: { message?: string; error?: string } })?.data?.message
       ?? (e as { data?: { error?: string } })?.data?.error
     submitError.value = msg ? `Analysis failed: ${msg}` : 'Analysis failed. Please try again.'
@@ -43,63 +42,77 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <div class="p-6 max-w-2xl space-y-6">
-    <Button variant="ghost" size="sm" class="-ml-2" as-child>
+  <div class="p-6 max-w-3xl space-y-6">
+    <Button variant="ghost" size="sm" class="-ml-2 text-muted-foreground" as-child>
       <NuxtLink to="/job-analyzer">
-        <PhArrowLeft :size="16" />
+        <PhArrowLeft :size="15" />
         Job Analyzer
       </NuxtLink>
     </Button>
 
     <div>
-      <h1 class="text-xl font-semibold">Analyze a Job Description</h1>
-      <p class="text-sm text-muted-foreground">
+      <h1 class="text-xl font-semibold tracking-tight">Analyze a Job Description</h1>
+      <p class="text-sm text-muted-foreground mt-0.5">
         Get a summary, requirements, fit score, and a cover-letter draft.
       </p>
     </div>
 
-    <form class="space-y-5" @submit.prevent="handleSubmit">
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="job-description">
-          Job Description <span class="text-destructive" aria-hidden="true">*</span>
-        </label>
-        <textarea
-          id="job-description"
-          v-model="form.jobDescription"
-          rows="10"
-          placeholder="Paste the full job description here…"
-          :aria-invalid="!!errors.jobDescription"
-          class="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        />
-        <p v-if="errors.jobDescription" class="text-xs text-destructive" role="alert">
-          {{ errors.jobDescription }}
-        </p>
-      </div>
+    <form class="space-y-6" @submit.prevent="handleSubmit">
+      <div class="grid gap-5 lg:grid-cols-5">
 
-      <div class="space-y-1.5">
-        <label class="text-sm font-medium" for="skills">
-          Your Skills <span class="text-destructive" aria-hidden="true">*</span>
-        </label>
-        <textarea
-          id="skills"
-          v-model="form.skills"
-          rows="5"
-          placeholder="Comma- or new-line separated, e.g.&#10;React, TypeScript, Node.js, PostgreSQL"
-          :aria-invalid="!!errors.skills"
-          class="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-        />
-        <p v-if="errors.skills" class="text-xs text-destructive" role="alert">
-          {{ errors.skills }}
-        </p>
+        <!-- Job description — wider column -->
+        <div class="space-y-1.5 lg:col-span-3">
+          <label class="text-sm font-medium" for="job-description">
+            Job Description <span class="text-destructive" aria-hidden="true">*</span>
+          </label>
+          <textarea
+            id="job-description"
+            v-model="form.jobDescription"
+            rows="14"
+            placeholder="Paste the full job description here…"
+            :aria-invalid="!!errors.jobDescription"
+            class="w-full resize-y rounded-lg border border-input bg-background px-3 py-2.5 text-sm leading-relaxed placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <p v-if="errors.jobDescription" class="text-xs text-destructive" role="alert">
+            {{ errors.jobDescription }}
+          </p>
+        </div>
+
+        <!-- Skills — narrower column -->
+        <div class="space-y-1.5 lg:col-span-2">
+          <label class="text-sm font-medium" for="skills">
+            Your Skills <span class="text-destructive" aria-hidden="true">*</span>
+          </label>
+          <textarea
+            id="skills"
+            v-model="form.skills"
+            rows="14"
+            placeholder="One per line or comma-separated:&#10;&#10;React&#10;TypeScript&#10;Node.js&#10;PostgreSQL"
+            :aria-invalid="!!errors.skills"
+            class="w-full resize-y rounded-lg border border-input bg-background px-3 py-2.5 text-sm leading-relaxed placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          />
+          <p v-if="errors.skills" class="text-xs text-destructive" role="alert">
+            {{ errors.skills }}
+          </p>
+
+          <div v-if="submitting" class="rounded-lg border bg-muted/40 p-3 mt-3">
+            <p class="text-xs text-muted-foreground leading-relaxed">
+              <span class="font-medium text-foreground">Analyzing…</span>
+              <br />
+              The AI is reading the job description. This usually takes 10–20 seconds.
+            </p>
+          </div>
+        </div>
       </div>
 
       <p v-if="submitError" class="text-xs text-destructive" role="alert">{{ submitError }}</p>
 
-      <div class="flex justify-end gap-2 pt-2">
+      <div class="flex justify-end gap-2">
         <Button type="button" variant="outline" as-child>
           <NuxtLink to="/job-analyzer">Cancel</NuxtLink>
         </Button>
         <Button type="submit" :disabled="submitting">
+          <PhSparkle :size="15" />
           {{ submitting ? 'Analyzing…' : 'Analyze' }}
         </Button>
       </div>

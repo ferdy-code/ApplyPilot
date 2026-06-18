@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { PhArrowLeft, PhTrash, PhX, PhCopy, PhCheck } from '@phosphor-icons/vue'
+import { PhArrowLeft, PhTrash, PhX, PhCopy, PhCheck, PhSparkle } from '@phosphor-icons/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import ErrorState from '@/components/common/ErrorState.vue'
 import type { JobAnalysis } from '~/composables/useJobAnalyses'
@@ -28,18 +28,25 @@ function formatDate(dateStr: string) {
   })
 }
 
-// Fit-score band → reused Badge variant + progress-bar fill color.
 function scoreVariant(score: number | null) {
   if (score === null) return 'secondary' as const
   if (score >= 70) return 'offer' as const
   if (score >= 40) return 'interview' as const
   return 'rejected' as const
 }
+
 function scoreBarClass(score: number | null) {
   if (score === null) return 'bg-muted-foreground'
   if (score >= 70) return 'bg-green-500'
   if (score >= 40) return 'bg-amber-500'
-  return 'bg-red-500'
+  return 'bg-red-400'
+}
+
+function scoreSummary(score: number | null) {
+  if (score === null) return ''
+  if (score >= 70) return 'Strong fit — you meet most of the requirements.'
+  if (score >= 40) return 'Partial fit — some gaps worth addressing.'
+  return 'Weak fit — significant skill gaps present.'
 }
 
 // ── Copy cover letter ─────────────────────────────────────────
@@ -51,7 +58,7 @@ async function copyCoverLetter() {
     copied.value = true
     setTimeout(() => (copied.value = false), 2000)
   } catch {
-    // Clipboard may be unavailable (insecure context); ignore silently.
+    // Clipboard unavailable in insecure context — ignore silently.
   }
 }
 
@@ -65,10 +72,10 @@ async function confirmDelete() {
 </script>
 
 <template>
-  <div class="p-6 max-w-2xl space-y-6">
-    <Button variant="ghost" size="sm" class="-ml-2" as-child>
+  <div class="p-6 max-w-2xl space-y-5">
+    <Button variant="ghost" size="sm" class="-ml-2 text-muted-foreground" as-child>
       <NuxtLink to="/job-analyzer">
-        <PhArrowLeft :size="16" />
+        <PhArrowLeft :size="15" />
         Job Analyzer
       </NuxtLink>
     </Button>
@@ -91,10 +98,11 @@ async function confirmDelete() {
 
     <!-- Detail -->
     <template v-else>
+      <!-- Header -->
       <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0 space-y-1">
-          <h1 class="text-2xl font-semibold">{{ analysis.jobTitle || 'Untitled role' }}</h1>
-          <p class="text-sm text-muted-foreground">Analyzed {{ formatDate(analysis.createdAt) }}</p>
+        <div class="min-w-0">
+          <h1 class="text-2xl font-semibold tracking-tight">{{ analysis.jobTitle || 'Untitled role' }}</h1>
+          <p class="text-sm text-muted-foreground mt-0.5">Analyzed {{ formatDate(analysis.createdAt) }}</p>
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
@@ -120,31 +128,51 @@ async function confirmDelete() {
         </div>
       </div>
 
-      <!-- Fit score -->
+      <!-- Fit score card -->
       <Card v-if="analysis.fitScore !== null">
-        <CardContent class="space-y-4 pt-6">
-          <div class="flex items-center justify-between">
-            <span class="text-sm font-medium">Fit score</span>
-            <Badge :variant="scoreVariant(analysis.fitScore)">{{ analysis.fitScore }}% match</Badge>
+        <CardContent class="pt-5 pb-5">
+          <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                Fit Score
+              </p>
+              <div class="flex items-baseline gap-2">
+                <span class="text-4xl font-mono font-semibold tabular-nums leading-none">
+                  {{ analysis.fitScore }}
+                </span>
+                <span class="text-lg text-muted-foreground font-mono">/ 100</span>
+              </div>
+            </div>
+            <Badge :variant="scoreVariant(analysis.fitScore)" class="text-sm px-3 py-1">
+              {{ analysis.fitScore }}% match
+            </Badge>
           </div>
-          <div class="h-2 w-full overflow-hidden rounded-full bg-muted">
+
+          <div class="h-2 w-full overflow-hidden rounded-full bg-muted mb-3">
             <div
-              class="h-full rounded-full transition-all"
+              class="h-full rounded-full transition-all duration-500"
               :class="scoreBarClass(analysis.fitScore)"
               :style="{ width: `${analysis.fitScore}%` }"
             />
           </div>
 
-          <div v-if="analysis.matchedSkills?.length" class="space-y-1.5">
-            <p class="text-xs font-medium uppercase text-muted-foreground">Matched skills</p>
-            <div class="flex flex-wrap gap-1.5">
-              <Badge v-for="s in analysis.matchedSkills" :key="s" variant="offer">{{ s }}</Badge>
+          <p class="text-sm text-muted-foreground">{{ scoreSummary(analysis.fitScore) }}</p>
+
+          <div
+            v-if="analysis.matchedSkills?.length || analysis.missingSkills?.length"
+            class="mt-4 grid gap-3 sm:grid-cols-2"
+          >
+            <div v-if="analysis.matchedSkills?.length" class="space-y-2">
+              <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Matched</p>
+              <div class="flex flex-wrap gap-1.5">
+                <Badge v-for="s in analysis.matchedSkills" :key="s" variant="offer">{{ s }}</Badge>
+              </div>
             </div>
-          </div>
-          <div v-if="analysis.missingSkills?.length" class="space-y-1.5">
-            <p class="text-xs font-medium uppercase text-muted-foreground">Missing skills</p>
-            <div class="flex flex-wrap gap-1.5">
-              <Badge v-for="s in analysis.missingSkills" :key="s" variant="outline">{{ s }}</Badge>
+            <div v-if="analysis.missingSkills?.length" class="space-y-2">
+              <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Missing</p>
+              <div class="flex flex-wrap gap-1.5">
+                <Badge v-for="s in analysis.missingSkills" :key="s" variant="outline">{{ s }}</Badge>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -152,8 +180,8 @@ async function confirmDelete() {
 
       <!-- Summary -->
       <Card v-if="analysis.summary">
-        <CardContent class="pt-6">
-          <h2 class="mb-2 text-sm font-medium">Summary</h2>
+        <CardContent class="pt-5 pb-5">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Summary</p>
           <p class="text-sm leading-relaxed text-muted-foreground">{{ analysis.summary }}</p>
         </CardContent>
       </Card>
@@ -164,20 +192,30 @@ async function confirmDelete() {
         class="grid gap-4 sm:grid-cols-2"
       >
         <Card v-if="analysis.responsibilities?.length">
-          <CardContent class="pt-6">
-            <h2 class="mb-3 text-sm font-medium">Responsibilities</h2>
-            <ul class="list-inside list-disc space-y-1.5 text-sm text-muted-foreground">
-              <li v-for="r in analysis.responsibilities" :key="r" class="marker:text-muted-foreground/50">
+          <CardContent class="pt-5 pb-5">
+            <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Responsibilities</p>
+            <ul class="space-y-2">
+              <li
+                v-for="r in analysis.responsibilities"
+                :key="r"
+                class="flex gap-2 text-sm text-muted-foreground"
+              >
+                <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
                 {{ r }}
               </li>
             </ul>
           </CardContent>
         </Card>
         <Card v-if="analysis.requirements?.length">
-          <CardContent class="pt-6">
-            <h2 class="mb-3 text-sm font-medium">Requirements</h2>
-            <ul class="list-inside list-disc space-y-1.5 text-sm text-muted-foreground">
-              <li v-for="r in analysis.requirements" :key="r" class="marker:text-muted-foreground/50">
+          <CardContent class="pt-5 pb-5">
+            <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Requirements</p>
+            <ul class="space-y-2">
+              <li
+                v-for="r in analysis.requirements"
+                :key="r"
+                class="flex gap-2 text-sm text-muted-foreground"
+              >
+                <span class="mt-1.5 h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
                 {{ r }}
               </li>
             </ul>
@@ -187,8 +225,8 @@ async function confirmDelete() {
 
       <!-- Keywords -->
       <Card v-if="analysis.keywords?.length">
-        <CardContent class="pt-6">
-          <h2 class="mb-3 text-sm font-medium">Keywords</h2>
+        <CardContent class="pt-5 pb-5">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Keywords</p>
           <div class="flex flex-wrap gap-1.5">
             <Badge v-for="k in analysis.keywords" :key="k" variant="secondary">{{ k }}</Badge>
           </div>
@@ -197,16 +235,16 @@ async function confirmDelete() {
 
       <!-- Cover letter -->
       <Card v-if="analysis.coverLetter">
-        <CardContent class="space-y-3 pt-6">
+        <CardContent class="pt-5 pb-5 space-y-3">
           <div class="flex items-center justify-between gap-3">
-            <h2 class="text-sm font-medium">Cover letter draft</h2>
+            <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Cover Letter Draft</p>
             <Button variant="outline" size="sm" @click="copyCoverLetter">
               <component :is="copied ? PhCheck : PhCopy" :size="14" />
-              {{ copied ? 'Copied' : 'Copy' }}
+              {{ copied ? 'Copied!' : 'Copy' }}
             </Button>
           </div>
           <Separator />
-          <p class="whitespace-pre-wrap text-sm leading-relaxed">{{ analysis.coverLetter }}</p>
+          <p class="text-sm leading-[1.8] text-muted-foreground whitespace-pre-wrap">{{ analysis.coverLetter }}</p>
         </CardContent>
       </Card>
     </template>

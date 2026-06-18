@@ -1,3 +1,9 @@
+<script setup lang="ts">
+useHead({
+  title: 'ApplyPilot',
+})
+</script>
+
 <template>
   <NuxtRouteAnnouncer />
   <NuxtLayout>

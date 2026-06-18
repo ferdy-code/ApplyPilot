@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import ErrorState from '@/components/common/ErrorState.vue'
 import type { ApplicationStatus, UpdateApplicationInput } from '~/composables/useApplications'
@@ -30,14 +29,18 @@ const application = computed(() =>
 
 const isLoading = computed(() => pending.value && !application.value)
 
-const statusLabel: Record<ApplicationStatus, string> = {
-  wishlist: 'Wishlist',
-  applied: 'Applied',
-  interview: 'Interview',
-  offer: 'Offer',
-  rejected: 'Rejected',
-  archived: 'Archived',
-}
+const statusOptions: { key: ApplicationStatus; label: string }[] = [
+  { key: 'wishlist', label: 'Wishlist' },
+  { key: 'applied', label: 'Applied' },
+  { key: 'interview', label: 'Interview' },
+  { key: 'offer', label: 'Offer' },
+  { key: 'rejected', label: 'Rejected' },
+  { key: 'archived', label: 'Archived' },
+]
+
+const statusLabel: Record<ApplicationStatus, string> = Object.fromEntries(
+  statusOptions.map(({ key, label }) => [key, label]),
+) as Record<ApplicationStatus, string>
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -124,18 +127,19 @@ async function confirmDelete() {
 </script>
 
 <template>
-  <div class="p-6 max-w-2xl space-y-6">
-    <Button variant="ghost" size="sm" class="-ml-2" as-child>
+  <div class="p-6 max-w-xl space-y-6">
+    <Button variant="ghost" size="sm" class="-ml-2 text-muted-foreground" as-child>
       <NuxtLink to="/applications">
-        <PhArrowLeft :size="16" />
+        <PhArrowLeft :size="15" />
         Applications
       </NuxtLink>
     </Button>
 
     <!-- Loading -->
-    <div v-if="isLoading" class="py-8 space-y-4 max-w-md">
-      <Skeleton class="h-8 w-1/2" />
-      <Skeleton class="h-40 w-full" />
+    <div v-if="isLoading" class="space-y-4">
+      <Skeleton class="h-8 w-48" />
+      <Skeleton class="h-5 w-32" />
+      <Skeleton class="h-52 w-full rounded-xl" />
     </div>
 
     <!-- Error -->
@@ -153,8 +157,8 @@ async function confirmDelete() {
     <template v-else-if="isEditing">
       <div class="flex items-center justify-between gap-4">
         <div>
-          <h1 class="text-xl font-semibold">Edit Application</h1>
-          <p class="text-sm text-muted-foreground">{{ application.companyName }}</p>
+          <h1 class="text-xl font-semibold tracking-tight">Edit Application</h1>
+          <p class="text-sm text-muted-foreground mt-0.5">{{ application.companyName }}</p>
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <Button variant="outline" size="sm" @click="cancelEdit">
@@ -168,58 +172,67 @@ async function confirmDelete() {
         </div>
       </div>
 
-      <form class="space-y-5" @submit.prevent="saveEdit">
-        <div class="space-y-1.5">
-          <label class="text-sm font-medium" for="edit-position">Position</label>
-          <Input id="edit-position" v-model="editForm.position" />
-        </div>
+      <form class="space-y-8" @submit.prevent="saveEdit">
+        <div class="space-y-4">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-2">Role</p>
 
-        <div class="space-y-1.5">
-          <p class="text-sm font-medium">Status</p>
-          <div class="flex flex-wrap gap-2">
-            <button
-              v-for="(label, key) in statusLabel"
-              :key="key"
-              type="button"
-              :class="[
-                'rounded-md border px-3 py-1 text-sm font-medium transition-colors',
-                editForm.status === key
-                  ? 'border-transparent bg-primary text-primary-foreground'
-                  : 'border-border bg-background text-foreground hover:bg-muted',
-              ]"
-              @click="editForm.status = key as ApplicationStatus"
-            >
-              {{ label }}
-            </button>
+          <div class="space-y-1.5">
+            <label class="text-sm font-medium" for="edit-position">Position</label>
+            <Input id="edit-position" v-model="editForm.position" />
+          </div>
+
+          <div class="space-y-1.5">
+            <p class="text-sm font-medium">Status</p>
+            <div class="flex flex-wrap gap-2">
+              <button
+                v-for="opt in statusOptions"
+                :key="opt.key"
+                type="button"
+                :class="[
+                  'rounded-full border px-3 py-1 text-sm font-medium transition-all',
+                  editForm.status === opt.key
+                    ? 'border-transparent bg-foreground text-background'
+                    : 'border-border bg-background text-muted-foreground hover:bg-muted hover:text-foreground',
+                ]"
+                @click="editForm.status = opt.key"
+              >
+                {{ opt.label }}
+              </button>
+            </div>
           </div>
         </div>
 
-        <div class="space-y-1.5">
-          <label class="text-sm font-medium" for="edit-source">Source</label>
-          <Input id="edit-source" v-model="editForm.source" placeholder="LinkedIn, referral…" />
-        </div>
+        <div class="space-y-4">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-2">Details</p>
 
-        <div class="space-y-1.5">
-          <label class="text-sm font-medium" for="edit-deadline">Deadline</label>
-          <Input id="edit-deadline" v-model="editForm.deadline" type="date" />
-        </div>
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div class="space-y-1.5">
+              <label class="text-sm font-medium" for="edit-source">Source</label>
+              <Input id="edit-source" v-model="editForm.source" placeholder="LinkedIn, referral…" />
+            </div>
+            <div class="space-y-1.5">
+              <label class="text-sm font-medium" for="edit-deadline">Deadline</label>
+              <Input id="edit-deadline" v-model="editForm.deadline" type="date" />
+            </div>
+          </div>
 
-        <div class="space-y-1.5">
-          <p class="text-sm font-medium">Salary Range</p>
-          <div class="flex gap-2">
-            <Input v-model="editForm.salaryMin" placeholder="Min" class="flex-1" />
-            <Input v-model="editForm.salaryMax" placeholder="Max" class="flex-1" />
-            <Input v-model="editForm.salaryCurrency" placeholder="USD" class="w-20" maxlength="3" />
+          <div class="space-y-1.5">
+            <p class="text-sm font-medium">Salary Range</p>
+            <div class="flex gap-2">
+              <Input v-model="editForm.salaryMin" placeholder="Min" class="flex-1" />
+              <Input v-model="editForm.salaryMax" placeholder="Max" class="flex-1" />
+              <Input v-model="editForm.salaryCurrency" placeholder="USD" class="w-20 font-mono uppercase" maxlength="3" />
+            </div>
           </div>
         </div>
 
-        <div class="space-y-1.5">
-          <label class="text-sm font-medium" for="edit-notes">Notes</label>
+        <div class="space-y-4">
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground border-b pb-2">Notes</p>
           <textarea
             id="edit-notes"
             v-model="editForm.notes"
             rows="4"
-            class="w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+            class="w-full resize-none rounded-lg border border-input bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
         </div>
 
@@ -230,12 +243,12 @@ async function confirmDelete() {
     <!-- View mode -->
     <template v-else>
       <div class="flex items-start justify-between gap-4">
-        <div class="min-w-0 space-y-1">
-          <div class="flex flex-wrap items-center gap-3">
-            <h1 class="text-2xl font-semibold">{{ application.companyName }}</h1>
+        <div class="min-w-0">
+          <h1 class="text-2xl font-semibold tracking-tight">{{ application.companyName }}</h1>
+          <div class="flex flex-wrap items-center gap-2.5 mt-1.5">
+            <p class="text-base text-muted-foreground">{{ application.position }}</p>
             <Badge :variant="application.status">{{ statusLabel[application.status] }}</Badge>
           </div>
-          <p class="text-muted-foreground">{{ application.position }}</p>
         </div>
 
         <div class="flex shrink-0 items-center gap-2">
@@ -266,44 +279,40 @@ async function confirmDelete() {
       </div>
 
       <Card>
-        <CardContent class="space-y-4 pt-6">
-          <dl class="space-y-4 text-sm">
-            <div class="flex gap-3">
-              <dt class="w-28 shrink-0 text-muted-foreground">Added</dt>
-              <dd>{{ formatDate(application.createdAt) }}</dd>
+        <CardContent class="pt-5 pb-4">
+          <dl class="divide-y">
+            <div class="flex gap-4 py-2.5 first:pt-0 last:pb-0">
+              <dt class="w-24 shrink-0 text-sm text-muted-foreground">Added</dt>
+              <dd class="text-sm">{{ formatDate(application.createdAt) }}</dd>
             </div>
 
             <template v-if="application.source">
-              <Separator />
-              <div class="flex gap-3">
-                <dt class="w-28 shrink-0 text-muted-foreground">Source</dt>
-                <dd>{{ application.source }}</dd>
+              <div class="flex gap-4 py-2.5">
+                <dt class="w-24 shrink-0 text-sm text-muted-foreground">Source</dt>
+                <dd class="text-sm">{{ application.source }}</dd>
               </div>
             </template>
 
             <template v-if="application.deadline">
-              <Separator />
-              <div class="flex gap-3">
-                <dt class="w-28 shrink-0 text-muted-foreground">Deadline</dt>
-                <dd>{{ formatDate(application.deadline) }}</dd>
+              <div class="flex gap-4 py-2.5">
+                <dt class="w-24 shrink-0 text-sm text-muted-foreground">Deadline</dt>
+                <dd class="text-sm">{{ formatDate(application.deadline) }}</dd>
               </div>
             </template>
 
             <template v-if="application.salaryMin || application.salaryMax">
-              <Separator />
-              <div class="flex gap-3">
-                <dt class="w-28 shrink-0 text-muted-foreground">Salary</dt>
-                <dd class="tabular-nums">
+              <div class="flex gap-4 py-2.5">
+                <dt class="w-24 shrink-0 text-sm text-muted-foreground">Salary</dt>
+                <dd class="text-sm font-mono tabular-nums">
                   {{ formatSalary(application.salaryMin, application.salaryMax, application.salaryCurrency) }}
                 </dd>
               </div>
             </template>
 
             <template v-if="application.notes">
-              <Separator />
-              <div class="flex gap-3">
-                <dt class="w-28 shrink-0 text-muted-foreground">Notes</dt>
-                <dd class="whitespace-pre-wrap leading-relaxed">{{ application.notes }}</dd>
+              <div class="flex gap-4 py-2.5">
+                <dt class="w-24 shrink-0 text-sm text-muted-foreground">Notes</dt>
+                <dd class="text-sm whitespace-pre-wrap leading-relaxed">{{ application.notes }}</dd>
               </div>
             </template>
           </dl>
