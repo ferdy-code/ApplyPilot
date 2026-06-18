@@ -22,9 +22,10 @@ const route = useRoute()
 const { user, signOut } = useAuth()
 
 const initials = computed(() => {
-  if (!user.value) return '?'
-  return user.value.name
-    .split(' ')
+  const name = user.value?.name?.trim()
+  if (!name) return '?'
+  return name
+    .split(/\s+/)
     .map((n) => n[0])
     .join('')
     .toUpperCase()
@@ -62,8 +63,7 @@ const pageTitle = computed(() => (route.meta.title as string) || PAGE_TITLES[rou
             <SidebarMenuButton size="lg" as-child>
               <NuxtLink to="/dashboard">
                 <div
-                  class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground"
-                >
+                  class="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <PhBriefcase :size="16" weight="bold" />
                 </div>
                 <div class="flex flex-col gap-0.5 leading-none">
@@ -118,7 +118,7 @@ const pageTitle = computed(() => (route.meta.title as string) || PAGE_TITLES[rou
       </SidebarFooter>
     </Sidebar>
 
-    <SidebarInset>
+    <SidebarInset class="overflow-x-hidden">
       <header class="flex h-12 shrink-0 items-center border-b px-4 gap-2">
         <SidebarTrigger class="-ml-1" />
         <Separator orientation="vertical" class="h-4" />

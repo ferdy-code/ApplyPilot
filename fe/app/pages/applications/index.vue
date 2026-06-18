@@ -11,11 +11,12 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import EmptyState from '@/components/common/EmptyState.vue'
+import ErrorState from '@/components/common/ErrorState.vue'
 import type { ApplicationStatus } from '~/composables/useApplications'
 
 definePageMeta({ title: 'Applications', middleware: 'auth' })
 
-const { applications, pending, fetchApplications } = useApplications()
+const { applications, pending, error, fetchApplications } = useApplications()
 
 onMounted(fetchApplications)
 
@@ -114,6 +115,9 @@ function formatDate(dateStr: string) {
     <div v-if="pending" class="py-12 text-center text-sm text-muted-foreground">
       Loading applications…
     </div>
+
+    <!-- Error -->
+    <ErrorState v-else-if="error" :message="error" :on-retry="fetchApplications" />
 
     <!-- Table -->
     <template v-else-if="filteredApplications.length > 0">

@@ -11,12 +11,14 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import ErrorState from '@/components/common/ErrorState.vue'
 import type { ApplicationStatus, UpdateApplicationInput } from '~/composables/useApplications'
 
 definePageMeta({ title: 'Application', middleware: 'auth' })
 
 const route = useRoute()
-const { applications, fetchApplications, updateApplication, deleteApplication } = useApplications()
+const { applications, pending, error, fetchApplications, updateApplication, deleteApplication } = useApplications()
 
 onMounted(async () => {
   if (applications.value.length === 0) await fetchApplications()
@@ -25,6 +27,8 @@ onMounted(async () => {
 const application = computed(() =>
   applications.value.find((a) => a.id === Number(route.params.id)),
 )
+
+const isLoading = computed(() => pending.value && !application.value)
 
 const statusLabel: Record<ApplicationStatus, string> = {
   wishlist: 'Wishlist',
@@ -128,8 +132,17 @@ async function confirmDelete() {
       </NuxtLink>
     </Button>
 
+    <!-- Loading -->
+    <div v-if="isLoading" class="py-8 space-y-4 max-w-md">
+      <Skeleton class="h-8 w-1/2" />
+      <Skeleton class="h-40 w-full" />
+    </div>
+
+    <!-- Error -->
+    <ErrorState v-else-if="error" :message="error" :on-retry="fetchApplications" />
+
     <!-- Not found -->
-    <div v-if="!application" class="py-16 text-center">
+    <div v-else-if="!application" class="py-16 text-center">
       <p class="mb-4 text-muted-foreground">Application not found.</p>
       <Button variant="outline" as-child>
         <NuxtLink to="/applications">Back to Applications</NuxtLink>
