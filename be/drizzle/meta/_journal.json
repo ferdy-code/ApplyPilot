@@ -8,6 +8,13 @@
       "when": 1781686566087,
       "tag": "0000_classy_jane_foster",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1781691048657,
+      "tag": "0001_zippy_gideon",
+      "breakpoints": true
     }
   ]
 }

@@ -63,7 +63,7 @@ const solutions = [
           ApplyPilot
         </NuxtLink>
         <Button size="sm" as-child>
-          <NuxtLink to="/dashboard">
+          <NuxtLink to="/login">
             Get Started
             <PhArrowRight :size="14" />
           </NuxtLink>
@@ -83,13 +83,13 @@ const solutions = [
         </p>
         <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
           <Button size="lg" as-child>
-            <NuxtLink to="/dashboard">
+            <NuxtLink to="/login">
               Start tracking — free
               <PhArrowRight :size="16" />
             </NuxtLink>
           </Button>
           <Button size="lg" variant="ghost" as-child>
-            <NuxtLink to="/dashboard">See dashboard</NuxtLink>
+            <NuxtLink to="/login">See dashboard</NuxtLink>
           </Button>
         </div>
       </div>
@@ -156,7 +156,7 @@ const solutions = [
         </p>
         <div class="mt-10">
           <Button size="lg" variant="secondary" as-child>
-            <NuxtLink to="/dashboard">
+            <NuxtLink to="/login">
               Open ApplyPilot
               <PhArrowRight :size="16" />
             </NuxtLink>

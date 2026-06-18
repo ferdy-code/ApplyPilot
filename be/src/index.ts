@@ -1,16 +1,22 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { HTTPException } from "hono/http-exception";
+import { auth } from "./lib/auth";
 import { applicationsRoutes } from "./routes/applications";
 import { companiesRoutes } from "./routes/companies";
 
 const app = new Hono();
 
-app.use("*", cors({ origin: "http://localhost:3000" }));
+// `credentials: true` so the browser sends the Better Auth session cookie from
+// the frontend origin (http://localhost:3000) to this API (:8000).
+app.use("*", cors({ origin: "http://localhost:3000", credentials: true }));
 
 app.get("/", (c) => {
   return c.text("Hello Hono!");
 });
+
+// Better Auth handlers (sign-up/sign-in/sign-out/session/social/callback).
+app.all("/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.route("/applications", applicationsRoutes);
 app.route("/companies", companiesRoutes);

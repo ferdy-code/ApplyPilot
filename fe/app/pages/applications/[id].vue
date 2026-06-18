@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import type { ApplicationStatus, UpdateApplicationInput } from '~/composables/useApplications'
 
-definePageMeta({ title: 'Application' })
+definePageMeta({ title: 'Application', middleware: 'auth' })
 
 const route = useRoute()
 const { applications, fetchApplications, updateApplication, deleteApplication } = useApplications()

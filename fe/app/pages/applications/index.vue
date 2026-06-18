@@ -13,7 +13,7 @@ import {
 import EmptyState from '@/components/common/EmptyState.vue'
 import type { ApplicationStatus } from '~/composables/useApplications'
 
-definePageMeta({ title: 'Applications' })
+definePageMeta({ title: 'Applications', middleware: 'auth' })
 
 const { applications, pending, fetchApplications } = useApplications()
 

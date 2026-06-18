@@ -5,6 +5,7 @@ import { and, desc, eq, type SQL } from 'drizzle-orm';
 import { z } from 'zod';
 import { db } from '../db';
 import { applications, companies } from '../db/schema';
+import { requireAuth, type AuthEnv } from '../lib/auth';
 import {
   createApplicationSchema,
   listApplicationsQuerySchema,
@@ -12,7 +13,10 @@ import {
   updateApplicationStatusSchema,
 } from '../schemas/application';
 
-export const applicationsRoutes = new Hono();
+export const applicationsRoutes = new Hono<AuthEnv>();
+
+// Every application route requires an authenticated session (sets c.user).
+applicationsRoutes.use(requireAuth);
 
 /** Parse `value` against `schema`, throwing a 400 HTTPException on failure. */
 function parseOr400<T>(value: unknown, schema: z.ZodType<T>): T {
@@ -35,7 +39,7 @@ function parseIdParam(c: Context): number {
   return Number(raw);
 }
 
-// POST /applications
+// POST /applications — userId comes from the session, not the request body.
 applicationsRoutes.post(
   '/',
   validator('json', (value) => parseOr400(value, createApplicationSchema)),
@@ -44,7 +48,7 @@ applicationsRoutes.post(
     const [created] = await db
       .insert(applications)
       .values({
-        userId: body.userId,
+        userId: c.get('user').id,
         companyId: body.companyId,
         position: body.position,
         // Leave status undefined when omitted so the DB default ('wishlist') applies.
@@ -62,13 +66,15 @@ applicationsRoutes.post(
   },
 );
 
-// GET /applications (optional filters: status, companyId, source)
+// GET /applications (optional filters: status, companyId, source), scoped to the
+// signed-in user.
 applicationsRoutes.get(
   '/',
   validator('query', (value) => parseOr400(value, listApplicationsQuerySchema)),
   async (c) => {
     const query = c.req.valid('query');
-    const filters: SQL[] = [];
+    // filters always includes the userId scope, so the array is never empty.
+    const filters: SQL[] = [eq(applications.userId, c.get('user').id)];
     if (query.status) filters.push(eq(applications.status, query.status));
     if (query.companyId) filters.push(eq(applications.companyId, query.companyId));
     if (query.source) filters.push(eq(applications.source, query.source));
@@ -76,7 +82,7 @@ applicationsRoutes.get(
       .select({ ...applications, companyName: companies.name })
       .from(applications)
       .leftJoin(companies, eq(applications.companyId, companies.id))
-      .where(filters.length ? and(...filters) : undefined)
+      .where(and(...filters))
       .orderBy(desc(applications.createdAt));
     return c.json(rows);
   },
@@ -85,28 +91,36 @@ applicationsRoutes.get(
 // GET /applications/:id
 applicationsRoutes.get('/:id', async (c) => {
   const id = parseIdParam(c);
+  const userId = c.get('user').id;
   const [row] = await db
     .select({ ...applications, companyName: companies.name })
     .from(applications)
     .leftJoin(companies, eq(applications.companyId, companies.id))
-    .where(eq(applications.id, id));
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)));
   if (!row) throw new HTTPException(404, { message: 'application not found' });
   return c.json(row);
 });
 
-/** Run update then re-fetch with JOIN so response includes companyName. */
-async function updateAndFetch(id: number, values: Record<string, unknown>) {
+/**
+ * Run update then re-fetch with JOIN so response includes companyName. The where
+ * clause is scoped to the user, so other users' applications 404 (no existence leak).
+ */
+async function updateAndFetch(
+  id: number,
+  userId: string,
+  values: Record<string, unknown>,
+) {
   const [check] = await db
     .update(applications)
     .set(values)
-    .where(eq(applications.id, id))
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)))
     .returning({ id: applications.id });
   if (!check) throw new HTTPException(404, { message: 'application not found' });
   const [row] = await db
     .select({ ...applications, companyName: companies.name })
     .from(applications)
     .leftJoin(companies, eq(applications.companyId, companies.id))
-    .where(eq(applications.id, id));
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)));
   return row;
 }
 
@@ -117,7 +131,10 @@ applicationsRoutes.patch(
   async (c) => {
     const id = parseIdParam(c);
     const { status } = c.req.valid('json');
-    const row = await updateAndFetch(id, { status, updatedAt: new Date() });
+    const row = await updateAndFetch(id, c.get('user').id, {
+      status,
+      updatedAt: new Date(),
+    });
     return c.json(row);
   },
 );
@@ -129,7 +146,10 @@ applicationsRoutes.patch(
   async (c) => {
     const id = parseIdParam(c);
     const body = c.req.valid('json');
-    const row = await updateAndFetch(id, { ...body, updatedAt: new Date() });
+    const row = await updateAndFetch(id, c.get('user').id, {
+      ...body,
+      updatedAt: new Date(),
+    });
     return c.json(row);
   },
 );
@@ -137,9 +157,10 @@ applicationsRoutes.patch(
 // DELETE /applications/:id
 applicationsRoutes.delete('/:id', async (c) => {
   const id = parseIdParam(c);
+  const userId = c.get('user').id;
   const [deleted] = await db
     .delete(applications)
-    .where(eq(applications.id, id))
+    .where(and(eq(applications.id, id), eq(applications.userId, userId)))
     .returning({ id: applications.id });
   if (!deleted) throw new HTTPException(404, { message: 'application not found' });
   return c.body(null, 204);

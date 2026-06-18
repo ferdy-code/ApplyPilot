@@ -4,6 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Badge } from '@/components/ui/badge'
 import type { ApplicationStatus } from '~/composables/useApplications'
 
+definePageMeta({ middleware: 'auth' })
+
 const { applications, fetchApplications } = useApplications()
 
 onMounted(fetchApplications)

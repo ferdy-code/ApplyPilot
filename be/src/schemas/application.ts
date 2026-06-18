@@ -9,11 +9,11 @@ const statusEnum = z.enum(applicationStatus.enumValues);
 const numericStr = z.string().regex(/^-?\d+(\.\d{1,2})?$/, 'invalid numeric');
 const dateStr = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'invalid date');
 
-// CREATE — userId, companyId, position required; status optional (DB defaults to 'wishlist').
+// CREATE — companyId, position required; status optional (DB defaults to 'wishlist').
+// userId is intentionally absent: the route derives it from the session, never the body.
 // Nullable columns are `.nullable().optional()` so callers can omit (leave untouched),
 // send null (clear), or send a value.
 export const createApplicationSchema = z.object({
-  userId: z.number().int().positive(),
   companyId: z.number().int().positive(),
   position: z.string().min(1).max(255),
   status: statusEnum.optional(),

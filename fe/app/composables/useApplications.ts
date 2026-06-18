@@ -2,7 +2,7 @@ export type ApplicationStatus = 'wishlist' | 'applied' | 'interview' | 'offer' |
 
 export interface Application {
   id: number
-  userId: number
+  userId: string
   companyId: number
   companyName: string
   position: string
@@ -36,8 +36,6 @@ export type UpdateApplicationInput = Partial<Pick<
   'position' | 'status' | 'source' | 'deadline' | 'salaryMin' | 'salaryMax' | 'salaryCurrency' | 'jobDescription' | 'notes'
 >>
 
-const HARDCODED_USER_ID = 1
-
 export function useApplications() {
   const { public: { apiBase } } = useRuntimeConfig()
 
@@ -49,7 +47,9 @@ export function useApplications() {
     pending.value = true
     error.value = null
     try {
-      applications.value = await $fetch<Application[]>(`${apiBase}/applications`)
+      applications.value = await $fetch<Application[]>(`${apiBase}/applications`, {
+        credentials: 'include',
+      })
     } catch (e) {
       error.value = 'Failed to load applications'
       console.error(e)
@@ -65,6 +65,7 @@ export function useApplications() {
   async function addApplication(input: CreateApplicationInput): Promise<void> {
     const company = await $fetch<{ id: number }>(`${apiBase}/companies`, {
       method: 'POST',
+      credentials: 'include',
       body: {
         name: input.companyName,
         location: input.companyLocation ?? null,
@@ -72,8 +73,8 @@ export function useApplications() {
     })
     const created = await $fetch<Application>(`${apiBase}/applications`, {
       method: 'POST',
+      credentials: 'include',
       body: {
-        userId: HARDCODED_USER_ID,
         companyId: company.id,
         position: input.position,
         status: input.status,
@@ -91,6 +92,7 @@ export function useApplications() {
   async function updateApplication(id: number, updates: UpdateApplicationInput): Promise<void> {
     const updated = await $fetch<Application>(`${apiBase}/applications/${id}`, {
       method: 'PATCH',
+      credentials: 'include',
       body: updates,
     })
     const index = applications.value.findIndex((a) => a.id === id)
@@ -98,7 +100,10 @@ export function useApplications() {
   }
 
   async function deleteApplication(id: number): Promise<void> {
-    await $fetch(`${apiBase}/applications/${id}`, { method: 'DELETE' })
+    await $fetch(`${apiBase}/applications/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    })
     applications.value = applications.value.filter((a) => a.id !== id)
   }
 

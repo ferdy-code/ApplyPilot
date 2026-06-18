@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import type { ApplicationStatus } from '~/composables/useApplications'
 
-definePageMeta({ title: 'New Application' })
+definePageMeta({ title: 'New Application', middleware: 'auth' })
 
 const { addApplication } = useApplications()
 

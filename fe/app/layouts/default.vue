@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhBriefcase, PhGauge } from '@phosphor-icons/vue'
+import { PhBriefcase, PhGauge, PhSignOut } from '@phosphor-icons/vue'
 import {
   Sidebar,
   SidebarContent,
@@ -18,6 +18,23 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 
 const route = useRoute()
+
+const { user, signOut } = useAuth()
+
+const initials = computed(() => {
+  if (!user.value) return '?'
+  return user.value.name
+    .split(' ')
+    .map((n) => n[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+})
+
+async function handleLogout() {
+  await signOut()
+  await navigateTo('/login')
+}
 
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: PhGauge },
@@ -80,13 +97,19 @@ const pageTitle = computed(() => (route.meta.title as string) || PAGE_TITLES[rou
             <SidebarMenuButton size="lg">
               <Avatar class="size-8 rounded-lg">
                 <AvatarFallback class="rounded-lg bg-sidebar-accent text-sidebar-accent-foreground">
-                  JD
+                  {{ initials }}
                 </AvatarFallback>
               </Avatar>
-              <div class="flex flex-col gap-0.5 leading-none">
-                <span class="font-medium text-sm">John Doe</span>
-                <span class="text-xs text-sidebar-foreground/60">john@example.com</span>
+              <div class="flex min-w-0 flex-1 flex-col gap-0.5 leading-none">
+                <span class="truncate font-medium text-sm">{{ user?.name }}</span>
+                <span class="truncate text-xs text-sidebar-foreground/60">{{ user?.email }}</span>
               </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          <SidebarMenuItem>
+            <SidebarMenuButton tooltip="Sign out" @click="handleLogout">
+              <PhSignOut :size="16" />
+              <span>Sign out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

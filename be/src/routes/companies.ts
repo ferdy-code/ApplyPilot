@@ -4,8 +4,14 @@ import { validator } from 'hono/validator';
 import { z } from 'zod';
 import { db } from '../db';
 import { companies } from '../db/schema';
+import { requireAuth, type AuthEnv } from '../lib/auth';
 
-export const companiesRoutes = new Hono();
+export const companiesRoutes = new Hono<AuthEnv>();
+
+// Creating a company requires an authenticated session. Companies are global/
+// shared (no per-user ownership column yet), so reads are intentionally not
+// user-scoped.
+companiesRoutes.use(requireAuth);
 
 const createCompanySchema = z.object({
   name: z.string().min(1).max(255),
