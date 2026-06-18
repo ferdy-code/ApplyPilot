@@ -4,6 +4,7 @@ import { HTTPException } from "hono/http-exception";
 import { auth } from "./lib/auth";
 import { applicationsRoutes } from "./routes/applications";
 import { companiesRoutes } from "./routes/companies";
+import { jobAnalysesRoutes } from "./routes/jobAnalyses";
 
 const app = new Hono();
 
@@ -20,6 +21,7 @@ app.all("/api/auth/*", (c) => auth.handler(c.req.raw));
 
 app.route("/applications", applicationsRoutes);
 app.route("/companies", companiesRoutes);
+app.route("/job-analyses", jobAnalysesRoutes);
 
 app.notFound((c) => c.json({ error: "not found" }, 404));
 

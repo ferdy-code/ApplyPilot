@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PhBriefcase, PhGauge, PhSignOut } from '@phosphor-icons/vue'
+import { PhBriefcase, PhGauge, PhSignOut, PhSparkle } from '@phosphor-icons/vue'
 import {
   Sidebar,
   SidebarContent,
@@ -39,6 +39,7 @@ async function handleLogout() {
 const navLinks = [
   { href: '/dashboard', label: 'Dashboard', icon: PhGauge },
   { href: '/applications', label: 'Applications', icon: PhBriefcase },
+  { href: '/job-analyzer', label: 'Job Analyzer', icon: PhSparkle },
 ]
 
 const isActive = (path: string) =>
@@ -47,6 +48,7 @@ const isActive = (path: string) =>
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': 'Dashboard',
   '/applications': 'Applications',
+  '/job-analyzer': 'Job Analyzer',
 }
 const pageTitle = computed(() => (route.meta.title as string) || PAGE_TITLES[route.path] || '')
 </script>

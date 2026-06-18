@@ -2,6 +2,7 @@ import {
   boolean,
   date,
   integer,
+  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -112,6 +113,32 @@ export const applicationNotes = pgTable("application_notes", {
     .notNull()
     .references(() => applications.id, { onDelete: "cascade" }),
   content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+// --- AI job analyzer --------------------------------------------------------
+// One row per analysis: raw inputs (jobDescription + skills) plus the structured
+// AI output. Arrays are typed jsonb columns; everything is user-scoped via userId.
+
+export const jobAnalyses = pgTable("job_analyses", {
+  id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  // Raw inputs.
+  jobDescription: text("job_description").notNull(),
+  skills: text("skills").notNull(),
+  // Structured AI output.
+  jobTitle: varchar("job_title", { length: 255 }),
+  summary: text("summary"),
+  responsibilities: jsonb("responsibilities").$type<string[]>(),
+  requirements: jsonb("requirements").$type<string[]>(),
+  keywords: jsonb("keywords").$type<string[]>(),
+  matchedSkills: jsonb("matched_skills").$type<string[]>(),
+  missingSkills: jsonb("missing_skills").$type<string[]>(),
+  fitScore: integer("fit_score"),
+  coverLetter: text("cover_letter"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
